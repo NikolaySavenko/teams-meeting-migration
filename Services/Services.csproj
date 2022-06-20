@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Azure.Identity" Version="1.5.0" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
+      <PackageReference Include="Microsoft.Graph" Version="4.30.0" />
+      <PackageReference Include="Microsoft.Graph.Beta" Version="4.30.0-preview" />
+      <PackageReference Include="Microsoft.Identity.Client" Version="4.42.0" />
+      <PackageReference Include="Microsoft.Identity.Web.TokenCache" Version="1.25.0" />
+    </ItemGroup>
+
+    <Target Name="ChangeAliasesOfStrongNameAssemblies" BeforeTargets="FindReferenceAssembliesForReferences;ResolveReferences">
+        <ItemGroup>
+            <ReferencePath Condition="'%(FileName)' == 'Microsoft.Graph.Beta'">
+                <Aliases>BetaLib</Aliases>
+            </ReferencePath>
+        </ItemGroup>
+    </Target>
+</Project>

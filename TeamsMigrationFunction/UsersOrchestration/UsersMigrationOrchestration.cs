@@ -29,7 +29,7 @@ namespace TeamsMigrationFunction.UsersOrchestration
         
         [FunctionName(nameof(RunUsersMigrationOrchestrationHttp))]
         public static async Task<HttpResponseMessage> RunUsersMigrationOrchestrationHttp(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequestMessage req,
             [DurableClient] IDurableOrchestrationClient starter,
             ILogger log
         )

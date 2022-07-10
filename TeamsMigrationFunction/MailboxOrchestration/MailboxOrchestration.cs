@@ -16,8 +16,10 @@ namespace TeamsMigrationFunction.MailboxOrchestration
         )
         {
             var user = context.GetInput<User>();
+            await context.CallActivityAsync(nameof(EmailSender.EmailSender.SendUpcomingMigrationEmail), user);
             if (!context.IsReplaying) log.LogInformation("[Migration] Started mailbox orchestration for user {UserUserPrincipalName}", user.UserPrincipalName);
             await context.CallSubOrchestratorAsync(nameof(EventsOrchestration.RunEventsOrchestration), user);
+            await context.CallActivityAsync(nameof(EmailSender.EmailSender.SendMigrationDoneEmail), user);
             // Here can be described another orchestrations...
         }
     }

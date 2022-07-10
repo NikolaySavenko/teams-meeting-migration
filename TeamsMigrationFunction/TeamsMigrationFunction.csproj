@@ -6,6 +6,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
         <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.7.2" />
+        <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.SendGrid" Version="3.0.2" />
         <PackageReference Include="Microsoft.Identity.Web.Certificate" Version="1.25.0" />
         <PackageReference Include="Microsoft.Identity.Web.TokenCache" Version="1.25.0" />
         <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.0.1" />
@@ -21,6 +22,9 @@
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\Services\Services.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <Compile Remove="sendEmail.cs" />
     </ItemGroup>
 
     <Target Name="ChangeAliasesOfStrongNameAssemblies" BeforeTargets="FindReferenceAssembliesForReferences;ResolveReferences">

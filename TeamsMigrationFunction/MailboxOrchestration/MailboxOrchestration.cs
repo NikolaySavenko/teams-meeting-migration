@@ -3,6 +3,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
+using System;
 using TeamsMigrationFunction.EventMigration;
 
 namespace TeamsMigrationFunction.MailboxOrchestration
@@ -16,10 +17,11 @@ namespace TeamsMigrationFunction.MailboxOrchestration
         )
         {
             var user = context.GetInput<User>();
-            await context.CallActivityAsync(nameof(EmailSender.EmailSender.SendUpcomingMigrationEmail), user);
+            var retryOptions = new RetryOptions(TimeSpan.FromSeconds(5), 3);
+            await context.CallActivityWithRetryAsync(nameof(EmailSender.EmailSender.SendUpcomingMigrationEmail), retryOptions, user);
             if (!context.IsReplaying) log.LogInformation("[Migration] Started mailbox orchestration for user {UserUserPrincipalName}", user.UserPrincipalName);
             await context.CallSubOrchestratorAsync(nameof(EventsOrchestration.RunEventsOrchestration), user);
-            await context.CallActivityAsync(nameof(EmailSender.EmailSender.SendMigrationDoneEmail), user);
+            await context.CallActivityWithRetryAsync(nameof(EmailSender.EmailSender.SendMigrationDoneEmail), retryOptions, user);
             // Here can be described another orchestrations...
         }
     }

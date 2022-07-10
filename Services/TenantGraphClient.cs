@@ -109,5 +109,16 @@ namespace Services
             await pageIterator.IterateAsync();
             return events;
         }
+
+        public async Task<Event> UpdateEvent(Event @event)
+        {
+            return await _graphClient.Users[@event.Organizer.EmailAddress.Address]
+                .Events[@event.Id]
+                .Request()
+                .UpdateAsync(new Event
+                {
+                    Body = @event.Body
+                });
+        }
     }
 }

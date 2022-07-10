@@ -18,10 +18,25 @@ namespace TeamsMigrationFunction.MailboxOrchestration
         {
             var user = context.GetInput<User>();
             var retryOptions = new RetryOptions(TimeSpan.FromSeconds(5), 3);
-            await context.CallActivityWithRetryAsync(nameof(EmailSender.EmailSender.SendUpcomingMigrationEmail), retryOptions, user);
+            try
+            {
+                await context.CallActivityWithRetryAsync(nameof(EmailSender.EmailSender.SendUpcomingMigrationEmail), retryOptions, user);
+            }
+            catch (Exception ex)
+            {
+                log.LogError("[Migration] Failed to sent upcoming migration email to {userPrincipalName}", user.UserPrincipalName);
+            }
             if (!context.IsReplaying) log.LogInformation("[Migration] Started mailbox orchestration for user {UserUserPrincipalName}", user.UserPrincipalName);
             await context.CallSubOrchestratorAsync(nameof(EventsOrchestration.RunEventsOrchestration), user);
-            await context.CallActivityWithRetryAsync(nameof(EmailSender.EmailSender.SendMigrationDoneEmail), retryOptions, user);
+            try
+            {
+                await context.CallActivityWithRetryAsync(nameof(EmailSender.EmailSender.SendMigrationDoneEmail), retryOptions, user);
+            }
+            catch (Exception ex)
+            {
+                log.LogError("[Migration] Failed to sent migration done email to {userPrincipalName}", user.UserPrincipalName);
+            }
+            
             // Here can be described another orchestrations...
         }
     }

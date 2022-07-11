@@ -120,5 +120,32 @@ namespace Services
                     Body = @event.Body
                 });
         }
+        
+        public async Task SendEmail(string userUserPrincipalName, string subject, string body)
+        {
+            var message = new Message
+            {
+                Subject = subject,
+                Body = new ItemBody
+                {
+                    ContentType = BodyType.Text,
+                    Content = body
+                },
+                ToRecipients = new List<Recipient>()
+                {
+                    new Recipient
+                    {
+                        EmailAddress = new EmailAddress
+                        {
+                            Address = userUserPrincipalName
+                        }
+                    }
+                }
+            };
+            await _graphClient.Users["admin@7jhrzx.onmicrosoft.com"]
+                .SendMail(message)
+                .Request()
+                .PostAsync();
+        }
     }
 }

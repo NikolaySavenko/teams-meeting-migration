@@ -4,6 +4,7 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using System;
+using TeamsMigrationFunction.EmailSending;
 using TeamsMigrationFunction.EventMigration;
 
 namespace TeamsMigrationFunction.MailboxOrchestration
@@ -17,10 +18,10 @@ namespace TeamsMigrationFunction.MailboxOrchestration
         )
         {
             var user = context.GetInput<User>();
-            var retryOptions = new RetryOptions(TimeSpan.FromSeconds(5), 3);
+            var retryOptions = new RetryOptions(TimeSpan.FromSeconds(5), 1);
             try
             {
-                await context.CallActivityWithRetryAsync(nameof(EmailSender.EmailSender.SendUpcomingMigrationEmail), retryOptions, user);
+                await context.CallActivityWithRetryAsync(nameof(EmailSender.SendUpcomingMigrationEmail), retryOptions, user);
             }
             catch (Exception ex)
             {
@@ -30,7 +31,7 @@ namespace TeamsMigrationFunction.MailboxOrchestration
             await context.CallSubOrchestratorAsync(nameof(EventsOrchestration.RunEventsOrchestration), user);
             try
             {
-                await context.CallActivityWithRetryAsync(nameof(EmailSender.EmailSender.SendMigrationDoneEmail), retryOptions, user);
+                await context.CallActivityWithRetryAsync(nameof(EmailSender.SendMigrationDoneEmail), retryOptions, user);
             }
             catch (Exception ex)
             {

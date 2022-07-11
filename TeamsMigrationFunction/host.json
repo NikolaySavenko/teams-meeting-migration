@@ -10,7 +10,8 @@
     },
     "extensions": {
         "durableTask": {
-            "hubName": "MeetingMigratorTaskHub"
+            "hubName": "MeetingMigratorTaskHub",
+            "maxConcurrentActivityFunctions": 1
         }
     }
     

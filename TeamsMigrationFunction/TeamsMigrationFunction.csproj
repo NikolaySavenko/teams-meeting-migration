@@ -10,6 +10,7 @@
         <PackageReference Include="Microsoft.Identity.Web.Certificate" Version="1.25.0" />
         <PackageReference Include="Microsoft.Identity.Web.TokenCache" Version="1.25.0" />
         <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.0.1" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     </ItemGroup>
     <ItemGroup>
         <None Update="host.json">
@@ -25,6 +26,7 @@
     </ItemGroup>
     <ItemGroup>
       <Compile Remove="sendEmail.cs" />
+      <Compile Remove="test.cs" />
     </ItemGroup>
 
     <Target Name="ChangeAliasesOfStrongNameAssemblies" BeforeTargets="FindReferenceAssembliesForReferences;ResolveReferences">

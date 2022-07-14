@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Services;
 using TeamsMigrationFunction.UserConfiguration;
-using TeamsMigrationFunction.UserMapping;
 
 namespace TeamsMigrationFunction.EventMigration
 {
@@ -31,7 +27,7 @@ namespace TeamsMigrationFunction.EventMigration
             var sourceEvent = context.GetInput<Event>();
             if (!context.IsReplaying) log.LogInformation("[Migration] Migrating event with subject: {SourceEventSubject}", sourceEvent.Subject);
 
-            var organizedMapping = await context.CallActivityAsync<UserMappingg?>(nameof(GetMappingForSourceUpn), sourceEvent.Organizer);
+            var organizedMapping = await context.CallActivityAsync<UserMapping?>(nameof(GetMappingForSourceUpn), sourceEvent.Organizer);
             
             if (organizedMapping != null)
             {
@@ -45,7 +41,7 @@ namespace TeamsMigrationFunction.EventMigration
             
             var attendeeMappings = await Task.WhenAll(
                 sourceEvent.Attendees
-                    .Select(attendee => context.CallActivityAsync<UserMappingg>(nameof(GetMappingForSourceUpn), attendee.EmailAddress.Address))
+                    .Select(attendee => context.CallActivityAsync<UserMapping>(nameof(GetMappingForSourceUpn), attendee.EmailAddress.Address))
             );
 
             sourceEvent.Attendees = sourceEvent.Attendees.Select(attendee =>
@@ -72,14 +68,14 @@ namespace TeamsMigrationFunction.EventMigration
         }
 
         [FunctionName(nameof(GetMappingForSourceUpn))]
-        public static UserMappingg GetMappingForSourceUpn(
+        public static UserMapping GetMappingForSourceUpn(
             [ActivityTrigger] string upn,
             [CosmosDB(
                 databaseName: "MeetingMigrationService",
                 collectionName: "UserMappings",
                 ConnectionStringSetting = "CosmosDBConnection",
                 SqlQuery = "SELECT * FROM c WHERE c.SourceUpn = {upn}"
-                )] IEnumerable<UserMappingg> userMappings)
+                )] IEnumerable<UserMapping> userMappings)
         {
             return userMappings.FirstOrDefault();
         }

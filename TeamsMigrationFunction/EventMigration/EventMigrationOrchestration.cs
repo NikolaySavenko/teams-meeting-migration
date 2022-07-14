@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Services;
+using TeamsMigrationFunction.UserConfiguration;
 using TeamsMigrationFunction.UserMapping;
 
 namespace TeamsMigrationFunction.EventMigration
@@ -28,19 +30,58 @@ namespace TeamsMigrationFunction.EventMigration
         {
             var sourceEvent = context.GetInput<Event>();
             if (!context.IsReplaying) log.LogInformation("[Migration] Migrating event with subject: {SourceEventSubject}", sourceEvent.Subject);
-            var mapperEntityId = new EntityId(nameof(UserMapper), "global");
-            var mapperProxy = context.CreateEntityProxy<IUserMapper>(mapperEntityId);
+
+            var organizedMapping = await context.CallActivityAsync<UserMappingg?>(nameof(GetMappingForSourceUpn), sourceEvent.Organizer);
             
-            sourceEvent.Organizer.EmailAddress.Address = await mapperProxy.GetUserDestinationUpn(sourceEvent.Organizer.EmailAddress.Address);
-            sourceEvent.Attendees = await Task.WhenAll(
+            if (organizedMapping != null)
+            {
+                sourceEvent.Organizer.EmailAddress.Address = organizedMapping.DestinationUpn;
+                if (!context.IsReplaying) log.LogInformation("[Migration] Meeting: {Subject} -> Found organizer mapping: {Mapping}", sourceEvent.Subject, organizedMapping);
+            }
+            else
+            {
+                if (!context.IsReplaying) log.LogInformation("[Migration] Meeting: {Subject} -> Not found organizer mapping: {Email}", sourceEvent.Subject, sourceEvent.Organizer.EmailAddress.Address);
+            }
+            
+            var attendeeMappings = await Task.WhenAll(
                 sourceEvent.Attendees
-                    .Select(attendee => mapperProxy.GetDestinationAttendee(attendee))
+                    .Select(attendee => context.CallActivityAsync<UserMappingg>(nameof(GetMappingForSourceUpn), attendee.EmailAddress.Address))
             );
+
+            sourceEvent.Attendees = sourceEvent.Attendees.Select(attendee =>
+            {
+                var mapping = attendeeMappings.FirstOrDefault(mapping => mapping?.SourceUpn == attendee.EmailAddress.Address);
+                if (mapping != null)
+                {
+                    attendee.EmailAddress.Address = mapping.DestinationUpn;
+                    if (!context.IsReplaying) log.LogInformation("[Migration] Meeting: {Subject} -> Found attendee mapping: {Mapping}", sourceEvent.Subject , mapping);
+                }
+                else
+                {
+                    if (!context.IsReplaying) log.LogInformation("[Migration] Meeting: {Subject} -> Not found attendee mapping for {Email}", sourceEvent.Subject, attendee.EmailAddress.Address);
+                }
+                return attendee;
+            });
             
+            if (!context.IsReplaying) log.LogInformation("[Migration] Finished migrating event with subject: {SourceEventSubject}", sourceEvent.Subject);
+
             var recreatedEvent = await context.CallActivityAsync<Event>(nameof(RecreateOnlineMeetingEvent), sourceEvent);
             var updatedEvent = await context.CallActivityAsync<Event>(nameof(UpdateMeetingBody), recreatedEvent);
             await context.CallActivityAsync(nameof(CancelDeprecatedEvent), sourceEvent);
             return recreatedEvent;
+        }
+
+        [FunctionName(nameof(GetMappingForSourceUpn))]
+        public static UserMappingg GetMappingForSourceUpn(
+            [ActivityTrigger] string upn,
+            [CosmosDB(
+                databaseName: "MeetingMigrationService",
+                collectionName: "UserMappings",
+                ConnectionStringSetting = "CosmosDBConnection",
+                SqlQuery = "SELECT * FROM c WHERE c.SourceUpn = {upn}"
+                )] IEnumerable<UserMappingg> userMappings)
+        {
+            return userMappings.FirstOrDefault();
         }
 
         [FunctionName(nameof(RecreateOnlineMeetingEvent))]

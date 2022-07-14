@@ -13,6 +13,7 @@ using Microsoft.Graph;
 using Services;
 using TeamsMigrationFunction.UserConfiguration;
 using TeamsMigrationFunction.UserMapping;
+using KeyValuePair = System.Collections.Generic.KeyValuePair;
 
 namespace TeamsMigrationFunction.UsersOrchestration
 {
@@ -53,14 +54,9 @@ namespace TeamsMigrationFunction.UsersOrchestration
             ILogger log)
         {
             var csv = context.GetInput<string>();
-            var usersMapping = UserMapper.ReadMappingFromCsv(csv);
-            var mapperEntityId = new EntityId(nameof(UserMapper), "global");
-            var mapperProxy = context.CreateEntityProxy<IUserMapper>(mapperEntityId);
-            await mapperProxy.RecreateUsersMappings(usersMapping);
-            
             var users = await context.CallActivityAsync<User[]>(nameof(GetAllUsers), null);
+            var mailboxConfigs = ReadMailboxStartTimeFromCsv(csv);
             
-            var mailboxConfigs = UserConfiguration.UserConfiguration.ReadMailboxStartTimeFromCsv(csv);
             if (!context.IsReplaying) log.LogInformation("[Migration] Found {MailboxConfigs} user configs, preparing for orchestration...", mailboxConfigs.Count);
             await Task.WhenAll(
                 users.Select(
@@ -85,6 +81,17 @@ namespace TeamsMigrationFunction.UsersOrchestration
         public async Task<IEnumerable<User>> GetAllUsers([ActivityTrigger] IDurableActivityContext context)
         {
             return await _tenantClient.GetAllUsers();
+        }
+        
+        private static IDictionary<string, string> ReadMailboxStartTimeFromCsv(string csv)
+        {
+            return new Dictionary<string, string>(
+                csv.Split(Environment.NewLine)
+                    .Select(line => {
+                        var parsedParams = line.Split(",");
+                        return KeyValuePair.Create(parsedParams[0], parsedParams[1]);
+                    })
+            );
         }
     }
 }

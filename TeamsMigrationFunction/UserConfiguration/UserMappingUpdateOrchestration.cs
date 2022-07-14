@@ -36,7 +36,7 @@ namespace TeamsMigrationFunction.UserConfiguration
             
             var mappingsDictionary = ReadMappingFromCsv(input);
             var mappings = mappingsDictionary.Select(
-                mapping => new UserMappingg(mapping.Key, mapping.Value)
+                mapping => new UserMapping(mapping.Key, mapping.Value)
                 );
             await context.CallActivityAsync(nameof(UpdateUsersMapping), mappings);
             // Other orchestrations
@@ -46,13 +46,13 @@ namespace TeamsMigrationFunction.UserConfiguration
 
         [FunctionName(nameof(UpdateUsersMapping))]
         public static async Task UpdateUsersMapping(
-            [ActivityTrigger] UserMappingg[] mappingsToUpdate,
+            [ActivityTrigger] UserMapping[] mappingsToUpdate,
             [CosmosDB(
                 databaseName: "MeetingMigrationService",
                 collectionName: "UserMappings",
                 ConnectionStringSetting = "CosmosDBConnection",
                 PartitionKey = "/id",
-                CreateIfNotExists = true)] IAsyncCollector<UserMappingg> mappings,
+                CreateIfNotExists = true)] IAsyncCollector<UserMapping> mappings,
             ILogger log)
         {
             log.LogInformation("[Migration] Trying to update users mappings");

@@ -12,7 +12,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Services;
 using TeamsMigrationFunction.UserConfiguration;
-using TeamsMigrationFunction.UserMapping;
 using KeyValuePair = System.Collections.Generic.KeyValuePair;
 
 namespace TeamsMigrationFunction.UsersOrchestration

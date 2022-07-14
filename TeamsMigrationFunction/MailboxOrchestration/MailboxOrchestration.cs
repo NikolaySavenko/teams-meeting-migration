@@ -35,7 +35,7 @@ namespace TeamsMigrationFunction.MailboxOrchestration
         {
             try
             {
-                log.LogInformation("[Migration] Trying to send upcoming migration email to {UserUserPrincipalName}", user.UserPrincipalName);
+                if (!context.IsReplaying) log.LogInformation("[Migration] Trying to send upcoming migration email to {UserUserPrincipalName}", user.UserPrincipalName);
                 var email = new EmailMessage(
                     "Meeting Migration Service",
                     user.UserPrincipalName,
@@ -47,7 +47,7 @@ App will do this steps:
 You will be notified when your migration is done.");
                 var request = EmailSender.BuildEmailRequest(email);
                 await context.CallHttpAsync(request);
-                log.LogInformation("[Migration] Successfully sent upcoming migration email to {UserUserPrincipalName}", user.UserPrincipalName);
+                if (!context.IsReplaying) log.LogInformation("[Migration] Successfully sent upcoming migration email to {UserUserPrincipalName}", user.UserPrincipalName);
             }
             catch (Exception ex)
             {
@@ -59,7 +59,7 @@ You will be notified when your migration is done.");
         {
             try
             {
-                log.LogInformation("[Migration] Trying to send finished migration email to {UserUserPrincipalName}", user.UserPrincipalName);
+                if (!context.IsReplaying) log.LogInformation("[Migration] Trying to send finished migration email to {UserUserPrincipalName}", user.UserPrincipalName);
                 var email = new EmailMessage(
                     "Meeting Migration Service",
                     user.UserPrincipalName,
@@ -67,7 +67,7 @@ You will be notified when your migration is done.");
                     "Your Teams meetings has finished.");
                 var request = EmailSender.BuildEmailRequest(email);
                 await context.CallHttpAsync(request);
-                log.LogInformation("[Migration] Successfully sent finished migration email to {UserUserPrincipalName}", user.UserPrincipalName);
+                if (!context.IsReplaying) log.LogInformation("[Migration] Successfully sent finished migration email to {UserUserPrincipalName}", user.UserPrincipalName);
             }
             catch (Exception ex)
             {

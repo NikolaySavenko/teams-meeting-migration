@@ -46,16 +46,6 @@ namespace TeamsMigrationFunction.UserMapping
         [FunctionName(nameof(UserMapper))]
         public static Task Run([EntityTrigger] IDurableEntityContext ctx)
             => ctx.DispatchAsync<UserMapper>();
-
-        public static IDictionary<string, string> ReadMappingFromCsv(string csv)
-        {
-            return new Dictionary<string, string>(
-                csv.Split(Environment.NewLine)
-                    .Select(line => {
-                        var upns = line.Split(",");
-                        return KeyValuePair.Create(upns[0], upns[1]);
-                    })
-            );
-        }
+        
     }
 }

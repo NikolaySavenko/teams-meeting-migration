@@ -147,5 +147,12 @@ namespace Services
                 .Request()
                 .PostAsync();
         }
+
+        public async Task<User> GetUserByUpn(string upn)
+        {
+            return await _graphClient.Users[upn]
+                .Request()
+                .GetAsync();
+        }
     }
 }

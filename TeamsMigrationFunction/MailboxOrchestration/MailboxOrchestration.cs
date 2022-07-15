@@ -4,25 +4,43 @@ using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using System;
+using Services;
 using TeamsMigrationFunction.EmailSending;
 using TeamsMigrationFunction.EventMigration;
 
 namespace TeamsMigrationFunction.MailboxOrchestration
 {
-    public static class MailboxOrchestration
+    public class MailboxOrchestration
     {
+        private readonly TenantGraphClient _tenantClient;
+        
+        public MailboxOrchestration(TenantGraphClient tenantClient)
+        {
+            _tenantClient = tenantClient;
+        }
+        
         [FunctionName(nameof(RunMailboxOrchestrator))]
         public static async Task RunMailboxOrchestrator(
             [OrchestrationTrigger] IDurableOrchestrationContext context,
             ILogger log
         )
         {
-            var user = context.GetInput<User>();
+            var upn = context.GetInput<string>();
+            var user = await context.CallActivityAsync<User>(nameof(GetUserByUpn), upn);
             
             await SendUpcomingMigrationEmail(user, context, log);
             await MigrateMailboxForUser(user, context, log);
             await SendFinishedMigrationEmail(user, context, log);
             // Here can be described another orchestrations...
+        }
+
+        [FunctionName(nameof(GetUserByUpn))]
+        public async Task<User> GetUserByUpn(
+            [ActivityTrigger] string upn,
+            ILogger log)
+        {
+            log.LogInformation("[Migration] Trying to get user with upn: {upn}", upn);
+            return await _tenantClient.GetUserByUpn(upn);
         }
         
         private static async Task MigrateMailboxForUser(User user, IDurableOrchestrationContext context, ILogger log)

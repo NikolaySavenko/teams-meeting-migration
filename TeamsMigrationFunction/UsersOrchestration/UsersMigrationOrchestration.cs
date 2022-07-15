@@ -53,36 +53,37 @@ namespace TeamsMigrationFunction.UsersOrchestration
             ILogger log)
         {
             var csv = context.GetInput<string>();
-            var users = await context.CallActivityAsync<User[]>(nameof(GetAllUsers), null);
-            var mailboxConfigs = ReadMailboxStartTimeFromCsv(csv);
+            var userConfigurations = ReadUserConfigurationsFromCsv(csv);
+            var users = userConfigurations.Keys;
             
-            if (!context.IsReplaying) log.LogInformation("[Migration] Found {MailboxConfigs} user configs, preparing for orchestration...", mailboxConfigs.Count);
+            if (!context.IsReplaying) log.LogInformation("[Migration] Found {MailboxConfigs} user configs, preparing for orchestration...", userConfigurations.Count);
+            
             await Task.WhenAll(
                 users.Select(
-                    user => {
-                        var configEntityId = new EntityId(nameof(UserConfiguration), user.UserPrincipalName);
+                    upn => {
+                        var configEntityId = new EntityId(nameof(UserConfiguration), upn);
                         var configProxy = context.CreateEntityProxy<IUserConfiguration>(configEntityId);
-                        var hasTime = mailboxConfigs.TryGetValue(user.UserPrincipalName, out var startTime);
+                        var hasTime = userConfigurations.TryGetValue(upn, out var startTime);
                         
                         return configProxy.SetMailboxStartTime(hasTime ? startTime : DateTime.MinValue.ToString());
                     })
                 );
             
-            if (!context.IsReplaying) log.LogInformation("[Migration] Found {UsersLength} users. Starting mailbox orchestration...", users.Length);
+            if (!context.IsReplaying) log.LogInformation("[Migration] Found {UsersLength} users. Starting mailbox orchestration...", users.Count);
             await Task.WhenAll(
                 users.Select(
-                    user => context.CallSubOrchestratorAsync(MailboxMigrationOrchestratorName, user)
+                    upn => context.CallSubOrchestratorAsync(MailboxMigrationOrchestratorName, upn)
                 )
             );
         }
 
-        [FunctionName(nameof(GetAllUsers))]
-        public async Task<IEnumerable<User>> GetAllUsers([ActivityTrigger] IDurableActivityContext context)
+        [FunctionName(nameof(GetUsersForConfigurations))]
+        public async Task<IEnumerable<User>> GetUsersForConfigurations([ActivityTrigger] IDurableActivityContext context)
         {
             return await _tenantClient.GetAllUsers();
         }
         
-        private static IDictionary<string, string> ReadMailboxStartTimeFromCsv(string csv)
+        private static IDictionary<string, string> ReadUserConfigurationsFromCsv(string csv)
         {
             return new Dictionary<string, string>(
                 csv.Split(Environment.NewLine)

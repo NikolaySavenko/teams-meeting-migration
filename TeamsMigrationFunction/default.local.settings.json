@@ -6,7 +6,7 @@
     "SourceTenantId": "",
     "SourceClientId": "",
     "SourceClientSecret": "",
-    "EmailLogin": "",
-    "EmailPassword": ""
+    "CosmosDBConnection": "",
+    "EmailEndpoint": ""
   }
 }

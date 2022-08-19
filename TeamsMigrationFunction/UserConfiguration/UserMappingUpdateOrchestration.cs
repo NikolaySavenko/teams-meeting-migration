@@ -49,8 +49,8 @@ namespace TeamsMigrationFunction.UserConfiguration
             [ActivityTrigger] UserMapping[] mappingsToUpdate,
             [CosmosDB(
                 databaseName: "MeetingMigrationService",
-                collectionName: "UserMappings",
-                ConnectionStringSetting = "CosmosDBConnection",
+                containerName: "UserMappings",
+                Connection = "CosmosDBConnection",
                 PartitionKey = "/id",
                 CreateIfNotExists = true)] IAsyncCollector<UserMapping> mappings,
             ILogger log)

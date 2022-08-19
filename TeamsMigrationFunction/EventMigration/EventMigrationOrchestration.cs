@@ -72,8 +72,8 @@ namespace TeamsMigrationFunction.EventMigration
             [ActivityTrigger] string upn,
             [CosmosDB(
                 databaseName: "MeetingMigrationService",
-                collectionName: "UserMappings",
-                ConnectionStringSetting = "CosmosDBConnection",
+                containerName: "UserMappings",
+                Connection = "CosmosDBConnection",
                 SqlQuery = "SELECT * FROM c WHERE c.SourceUpn = {upn}"
                 )] IEnumerable<UserMapping> userMappings)
         {

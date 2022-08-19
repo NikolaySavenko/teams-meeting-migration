@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -53,7 +54,7 @@ namespace TeamsMigrationFunction.UsersOrchestration
             ILogger log)
         {
             var csv = context.GetInput<string>();
-            var userConfigurations = ReadUserConfigurationsFromCsv(csv);
+            var userConfigurations = await context.CallActivityAsync<Dictionary<string, string>>(nameof(ReadUserConfigurationsFromCsv), csv);
             var users = userConfigurations.Keys;
             
             if (!context.IsReplaying) log.LogInformation("[Migration] Found {MailboxConfigs} user configs, preparing for orchestration...", userConfigurations.Count);
@@ -83,14 +84,34 @@ namespace TeamsMigrationFunction.UsersOrchestration
             return await _tenantClient.GetAllUsers();
         }
         
-        private static IDictionary<string, string> ReadUserConfigurationsFromCsv(string csv)
+        [FunctionName(nameof(ReadUserConfigurationsFromCsv))]
+        public static Task<Dictionary<string, string>> ReadUserConfigurationsFromCsv([ActivityTrigger] string csv)
         {
-            return new Dictionary<string, string>(
+            var lines = csv.Split(Environment.NewLine);
+            // Assert missing key or value
+            var incorrectLinesSb = new StringBuilder();
+            foreach (var line in lines)
+            {
+                var upn2DateTime = line.Split(",");
+                if (upn2DateTime.Length != 2 || string.IsNullOrEmpty(upn2DateTime[0]) || string.IsNullOrEmpty(upn2DateTime[1]))
+                {
+                    var index = Array.IndexOf(lines, line);
+                    incorrectLinesSb.AppendLine($"[{index}: ({line})]");
+                }
+            }
+            
+            if (incorrectLinesSb.Length > 0)
+            {
+                throw new InvalidDataException($"Invalid input configuration CSV: \n {incorrectLinesSb}");
+            }
+            
+            return Task.FromResult(new Dictionary<string, string>(
                 csv.Split(Environment.NewLine)
-                    .Select(line => {
+                    .Select(line =>
+                    {
                         var parsedParams = line.Split(",");
                         return KeyValuePair.Create(parsedParams[0], parsedParams[1]);
-                    })
+                    }))
             );
         }
     }

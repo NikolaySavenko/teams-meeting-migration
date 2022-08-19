@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.WebJobs;
@@ -57,10 +58,15 @@ namespace TeamsMigrationFunction.UserConfiguration
             ILogger log)
         {
             var database = client.GetDatabase("MeetingMigrationService");
-            var container = database?.GetContainer("UserMappings");
-            if (container != null)
+            var container = database.GetContainer("UserMappings");
+            try
             {
                 await container.DeleteContainerAsync();
+                log.LogInformation("Successfully deleted old user mappings container");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                log.LogInformation("[Migration] User mappings container does not exist or already deleted");
             }
         }
 

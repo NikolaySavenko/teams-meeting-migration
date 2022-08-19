@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Extensions.Logging;
@@ -34,6 +35,7 @@ namespace TeamsMigrationFunction.UserConfiguration
             
             if (!context.IsReplaying) log.LogInformation("[Migration] Started user mapping update orchestration");
             
+            await context.CallActivityAsync(nameof(DeleteOldMappingsContainer), null);
             var mappingsDictionary = ReadMappingFromCsv(input);
             var mappings = mappingsDictionary.Select(
                 mapping => new UserMapping(mapping.Key, mapping.Value)
@@ -42,6 +44,24 @@ namespace TeamsMigrationFunction.UserConfiguration
             // Other orchestrations
             
             if (!context.IsReplaying) log.LogInformation("[Migration] Finished user mapping update orchestration");
+        }
+        
+        [FunctionName(nameof(DeleteOldMappingsContainer))]
+        public static async Task DeleteOldMappingsContainer(
+            [ActivityTrigger] IDurableActivityContext context,
+            [CosmosDB(
+                Connection = "CosmosDBConnection",
+                PartitionKey = "/id",
+                CreateIfNotExists = true
+                )] CosmosClient client,
+            ILogger log)
+        {
+            var database = client.GetDatabase("MeetingMigrationService");
+            var container = database?.GetContainer("UserMappings");
+            if (container != null)
+            {
+                await container.DeleteContainerAsync();
+            }
         }
 
         [FunctionName(nameof(UpdateUsersMapping))]
@@ -52,14 +72,18 @@ namespace TeamsMigrationFunction.UserConfiguration
                 containerName: "UserMappings",
                 Connection = "CosmosDBConnection",
                 PartitionKey = "/id",
-                CreateIfNotExists = true)] IAsyncCollector<UserMapping> mappings,
+                CreateIfNotExists = true)] IAsyncCollector<dynamic> mappings,
             ILogger log)
         {
             log.LogInformation("[Migration] Trying to update users mappings");
             foreach (var mappingToUpdate in mappingsToUpdate)
             {
                 log.LogInformation("[Migration] Updating mapping {MappingToUpdate}", mappingToUpdate);
-                await mappings.AddAsync(mappingToUpdate);
+                await mappings.AddAsync(new {
+                    id = Guid.NewGuid().ToString(),
+                    mappingToUpdate.SourceUpn,
+                    mappingToUpdate.DestinationUpn
+                });
             }
             log.LogInformation("[Migration] Updated users mappings");
         }

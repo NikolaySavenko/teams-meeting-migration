@@ -163,5 +163,11 @@ namespace Services
                 .Request()
                 .GetAsync();
         }
+
+        public async Task<int> GetUserMeetingsQty(User user, string dateTimeFrom)
+        {
+            var meetings = await GetMeetingEventsByUser(user, dateTimeFrom);
+            return meetings.Count();
+        }
     }
 }

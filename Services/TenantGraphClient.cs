@@ -96,6 +96,8 @@ namespace Services
             };
             var pagedEvents = await _graphClient.Users[user.Id].Events
                 .Request(queryOptions)
+                .Filter("isOrganizer eq true")
+                .Top(1000)
                 .GetAsync();
             var pageIterator = PageIterator<Event>
                 .CreatePageIterator(
@@ -158,6 +160,12 @@ namespace Services
             return await _graphClient.Users[upn]
                 .Request()
                 .GetAsync();
+        }
+
+        public async Task<int> GetUserMeetingsQty(User user, string dateTimeFrom)
+        {
+            var meetings = await GetMeetingEventsByUser(user, dateTimeFrom);
+            return meetings.Count();
         }
     }
 }

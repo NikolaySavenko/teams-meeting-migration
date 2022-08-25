@@ -1,4 +1,5 @@
-﻿using Microsoft.Graph;
+﻿using System.Globalization;
+using Microsoft.Graph;
 
 namespace Services
 {
@@ -109,7 +110,9 @@ namespace Services
                     // the collection
                     e =>
                     {
-                        if ((e.IsOrganizer ?? false) && (e.IsOnlineMeeting ?? false) && (!e.IsCancelled ?? true )) { 
+                        var startTime = DateTime.Parse(e.Start.DateTime);
+                        var timeFrom = DateTime.Parse(dateTimeFrom);
+                        if ((e.IsOrganizer ?? false) && (e.IsOnlineMeeting ?? false) && (!e.IsCancelled ?? true ) && startTime > timeFrom) { 
                             events.Add(e);
                         }
                         return true;

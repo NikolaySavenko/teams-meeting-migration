@@ -65,15 +65,20 @@ namespace TeamsMigrationFunction
                     })
             );
             
-            await Task.WhenAll(
+            var allCounts = await Task.WhenAll(
                 users.Select(
-                    upn => context.CallSubOrchestratorAsync(nameof(PrintUserMeetingsQty), upn)
+                    upn => context.CallSubOrchestratorAsync<int>(nameof(PrintUserMeetingsQty), upn)
                 )
             );
+
+            var count = allCounts.Sum();
+            
+            var normalLogger = context.CreateReplaySafeLogger(log);
+            normalLogger.LogInformation("[Migration] Summary: {OrganizedEventsLength} events for users: {UsersQty}", count, users.Count);
         }
         
         [FunctionName(nameof(PrintUserMeetingsQty))]
-        public async Task PrintUserMeetingsQty(
+        public async Task<int> PrintUserMeetingsQty(
             [OrchestrationTrigger] IDurableOrchestrationContext context,
             ILogger log
         )
@@ -90,6 +95,7 @@ namespace TeamsMigrationFunction
             var count = await context.CallActivityAsync<int>(nameof(GetMeetingQtyForUser), (user, mailboxStartTime));
             normalLogger.LogInformation("[Migration] Found {OrganizedEventsLength} events for user: {UserUserPrincipalName}", count, user.UserPrincipalName);
             // Here can be described another orchestrations...
+            return count;
         }
 
         [FunctionName(nameof(GetMeetingQtyForUser))]

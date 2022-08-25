@@ -41,6 +41,11 @@ namespace Services
                     Sensitivity = remappedEvent.Sensitivity,
                     ShowAs = remappedEvent.ShowAs,
                     Start = remappedEvent.Start,
+                    Body = new ItemBody
+                    {
+                        Content = " ",
+                        ContentType = BodyType.Text
+                    },
                     Subject = remappedEvent.Subject,
                     Type = remappedEvent.Type,
                     Categories = remappedEvent.Categories

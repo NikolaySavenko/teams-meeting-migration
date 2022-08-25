@@ -31,11 +31,29 @@ namespace TeamsMigrationFunction.EventMigration
 
             var organizedEvents = await context.CallActivityAsync<Event[]>(nameof(GetMeetingEventsOrganizedByUser), user);
             if (!context.IsReplaying) log.LogInformation("[Migration] Found {OrganizedEventsLength} events for user: {UserUserPrincipalName}. Starting migration", organizedEvents.Length, user.UserPrincipalName);
-            return await Task.WhenAll(
-                organizedEvents.Select(
-                    @event => context.CallSubOrchestratorAsync<Event>(nameof(EventMigrationOrchestration.RunEventMigrationOrchestration), @event)
-                )
-            );
+
+            var migratedEvents = new List<Event>();
+
+            foreach (var organizedEvent in organizedEvents)
+            {
+                try
+                {
+                    var migrated = await context.CallSubOrchestratorAsync<Event>(nameof(EventMigrationOrchestration.RunEventMigrationOrchestration), organizedEvent);
+                    migratedEvents.Add(migrated);
+                }
+                catch (Exception e)
+                {
+                    if (!context.IsReplaying) log.LogError($"Failed to migrate event {organizedEvent.Subject} for user {user} with exception {e}");
+                }
+            }
+
+            return migratedEvents;
+
+            // return await Task.WhenAll(
+            //     organizedEvents.Select(
+            //         @event => context.CallSubOrchestratorAsync<Event>(nameof(EventMigrationOrchestration.RunEventMigrationOrchestration), @event)
+            //     )
+            // );
         }
 
         private static async Task ConfigureUserMailboxStartTime(IDurableOrchestrationContext context, User user)

@@ -62,7 +62,7 @@ namespace TeamsMigrationFunction.EventMigration
             if (!context.IsReplaying) log.LogInformation("[Migration] Finished migrating event with subject: {SourceEventSubject}", sourceEvent.Subject);
 
             var recreatedEvent = await context.CallActivityAsync<Event>(nameof(RecreateOnlineMeetingEvent), sourceEvent);
-            //var updatedEvent = await context.CallActivityAsync<Event>(nameof(UpdateMeetingBody), recreatedEvent);
+            var updatedEvent = await context.CallActivityAsync<Event>(nameof(UpdateMeetingBody), recreatedEvent);
             //await context.CallActivityAsync(nameof(CancelDeprecatedEvent), sourceEvent);
             return recreatedEvent;
         }

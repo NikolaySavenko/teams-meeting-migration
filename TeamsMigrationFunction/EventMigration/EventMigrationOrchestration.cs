@@ -27,7 +27,7 @@ namespace TeamsMigrationFunction.EventMigration
             var sourceEvent = context.GetInput<Event>();
             if (!context.IsReplaying) log.LogInformation("[Migration] Migrating event with subject: {SourceEventSubject}", sourceEvent.Subject);
 
-            var organizedMapping = await context.CallActivityAsync<UserMapping?>(nameof(GetMappingForSourceUpn), sourceEvent.Organizer);
+            var organizedMapping = await context.CallActivityAsync<UserMapping?>(nameof(GetMappingForSourceUpn), sourceEvent.Organizer.EmailAddress.Address);
             
             if (organizedMapping != null)
             {
@@ -62,8 +62,8 @@ namespace TeamsMigrationFunction.EventMigration
             if (!context.IsReplaying) log.LogInformation("[Migration] Finished migrating event with subject: {SourceEventSubject}", sourceEvent.Subject);
 
             var recreatedEvent = await context.CallActivityAsync<Event>(nameof(RecreateOnlineMeetingEvent), sourceEvent);
-            var updatedEvent = await context.CallActivityAsync<Event>(nameof(UpdateMeetingBody), recreatedEvent);
-            await context.CallActivityAsync(nameof(CancelDeprecatedEvent), sourceEvent);
+            //var updatedEvent = await context.CallActivityAsync<Event>(nameof(UpdateMeetingBody), recreatedEvent);
+            //await context.CallActivityAsync(nameof(CancelDeprecatedEvent), sourceEvent);
             return recreatedEvent;
         }
 

@@ -28,9 +28,9 @@ namespace TeamsMigrationFunction.MailboxOrchestration
             var upn = context.GetInput<string>();
             var user = await context.CallActivityAsync<User>(nameof(GetUserByUpn), upn);
             
-            await SendUpcomingMigrationEmail(user, context, log);
+            //await SendUpcomingMigrationEmail(user, context, log);
             await MigrateMailboxForUser(user, context, log);
-            await SendFinishedMigrationEmail(user, context, log);
+            //await SendFinishedMigrationEmail(user, context, log);
             // Here can be described another orchestrations...
         }
 

@@ -1,4 +1,5 @@
-﻿using Microsoft.Graph;
+﻿using System.Globalization;
+using Microsoft.Graph;
 
 namespace Services
 {
@@ -89,16 +90,12 @@ namespace Services
         public async Task<IEnumerable<Event>> GetMeetingEventsByUser(User user, string dateTimeFrom)
         {
             var events = new List<Event>();
-            var queryOptions = new List<QueryOption>()
-            {
-                new("startdatetime", dateTimeFrom),
-                new("enddatetime", DateTime.MaxValue.ToString())
-            };
             var pagedEvents = await _graphClient.Users[user.Id].Events
-                .Request(queryOptions)
-                .Filter("isOrganizer eq true")
-                .Top(1000)
+                .Request()
+                //.Filter($"start/datetime gt '{dateTimeFrom}'")
+                //.Header("ConsistencyLevel", "eventual")
                 .GetAsync();
+            
             var pageIterator = PageIterator<Event>
                 .CreatePageIterator(
                     _graphClient,
@@ -107,7 +104,9 @@ namespace Services
                     // the collection
                     e =>
                     {
-                        if ((e.IsOrganizer ?? false) && (e.IsOnlineMeeting ?? false) && (!e.IsCancelled ?? true )) { 
+                        var startTime = DateTime.Parse(e.Start.DateTime);
+                        var timeFrom = DateTime.Parse(dateTimeFrom);
+                        if ((e.IsOrganizer ?? false) && (e.IsOnlineMeeting ?? false) && (!e.IsCancelled ?? true ) && startTime > timeFrom) { 
                             events.Add(e);
                         }
                         return true;

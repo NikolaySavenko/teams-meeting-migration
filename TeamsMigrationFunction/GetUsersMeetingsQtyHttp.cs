@@ -50,6 +50,8 @@ namespace TeamsMigrationFunction
             [OrchestrationTrigger] IDurableOrchestrationContext context,
             ILogger log)
         {
+            var normalLogger = context.CreateReplaySafeLogger(log);
+                
             var csv = context.GetInput<string>();
             var userConfigurations = await context.CallActivityAsync<Dictionary<string, string>>(nameof(UsersMigrationOrchestration.ReadUserConfigurationsFromCsv), csv);
             var users = userConfigurations.Keys;
@@ -64,17 +66,22 @@ namespace TeamsMigrationFunction
                         return configProxy.SetMailboxStartTime(hasTime ? startTime : DateTime.MinValue.ToString());
                     })
             );
-            
-            var allCounts = await Task.WhenAll(
-                users.Select(
-                    upn => context.CallSubOrchestratorAsync<int>(nameof(PrintUserMeetingsQty), upn)
-                )
-            );
 
-            var count = allCounts.Sum();
-            
-            var normalLogger = context.CreateReplaySafeLogger(log);
-            normalLogger.LogInformation("[Migration] Summary: {OrganizedEventsLength} events for users: {UsersQty}", count, users.Count);
+            var sum = 0;
+            foreach (var user in users)
+            {
+                try
+                {
+                    var count = await context.CallSubOrchestratorAsync<int>(nameof(PrintUserMeetingsQty), user);
+                    sum += count;
+                }
+                catch (Exception e)
+                {
+                    normalLogger.LogError($"Failed to count events for {user} with exception {e}");
+                }
+            }
+
+            normalLogger.LogInformation("[Migration] Summary: {OrganizedEventsLength} events for users: {UsersQty}", sum, users.Count);
         }
         
         [FunctionName(nameof(PrintUserMeetingsQty))]

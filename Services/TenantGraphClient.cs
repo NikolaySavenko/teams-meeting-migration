@@ -86,12 +86,16 @@ namespace Services
             var events = new List<Event>();
             var queryOptions = new List<QueryOption>()
             {
-                new("startdatetime", dateTimeFrom),
-                new("enddatetime", DateTime.MaxValue.ToString())
+                new QueryOption("filter", $"isOrganizer eq true and start/dateTime gt '{dateTimeFrom}'"),
+                new QueryOption("$count", "true")
             };
+
             var pagedEvents = await _graphClient.Users[user.Id].Events
-                .Request(queryOptions)
+                .Request( queryOptions )
+                .Filter($"isOrganizer eq true and start/dateTime gt '{dateTimeFrom}'")
+                .Top(999)
                 .GetAsync();
+            
             var pageIterator = PageIterator<Event>
                 .CreatePageIterator(
                     _graphClient,

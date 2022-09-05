@@ -71,11 +71,24 @@ namespace TeamsMigrationFunction.UsersOrchestration
                 );
             
             if (!context.IsReplaying) log.LogInformation("[Migration] Found {UsersLength} users. Starting mailbox orchestration...", users.Count);
-            await Task.WhenAll(
-                users.Select(
-                    upn => context.CallSubOrchestratorAsync(MailboxMigrationOrchestratorName, upn)
-                )
-            );
+            
+            foreach (var user in users)
+            {
+                try
+                {
+                    await context.CallSubOrchestratorAsync(MailboxMigrationOrchestratorName, user);
+                }
+                catch (Exception e)
+                {
+                    if (!context.IsReplaying) log.LogError($"Failed to migrate mailbox for {user} with exception {e}");
+                }
+            }
+            
+            // await Task.WhenAll(
+            //     users.Select(
+            //         upn => context.CallSubOrchestratorAsync(MailboxMigrationOrchestratorName, upn)
+            //     )
+            // );
         }
 
         [FunctionName(nameof(GetUsersForConfigurations))]

@@ -104,7 +104,9 @@ namespace Services
                     // the collection
                     e =>
                     {
-                        if ((e.IsOrganizer ?? false) && (e.IsOnlineMeeting ?? false) && (!e.IsCancelled ?? true )) { 
+                        var startTime = DateTime.Parse(e.Start.DateTime);
+                        var timeFrom = DateTime.Parse(dateTimeFrom);
+                        if ((e.IsOrganizer ?? false) && (e.IsOnlineMeeting ?? false) && (!e.IsCancelled ?? true ) && startTime > timeFrom) { 
                             events.Add(e);
                         }
                         return true;
@@ -157,6 +159,12 @@ namespace Services
             return await _graphClient.Users[upn]
                 .Request()
                 .GetAsync();
+        }
+
+        public async Task<int> GetUserMeetingsQty(User user, string dateTimeFrom)
+        {
+            var meetings = await GetMeetingEventsByUser(user, dateTimeFrom);
+            return meetings.Count();
         }
     }
 }

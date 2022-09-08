@@ -92,7 +92,6 @@ namespace Services
             var events = new List<Event>();
             var queryOptions = new List<QueryOption>()
             {
-                new QueryOption("filter", $"isOrganizer eq true and start/dateTime gt '{dateTimeFrom}'"),
                 new QueryOption("$count", "true")
             };
 

@@ -43,7 +43,7 @@ namespace TeamsMigrationFunction.EventMigration
                 }
                 catch (Exception e)
                 {
-                    if (!context.IsReplaying) log.LogError($"Failed to migrate event {organizedEvent.Subject} for user {user} with exception {e}");
+                    if (!context.IsReplaying) log.LogError($"Failed to migrate event {organizedEvent.Subject} for user {user.UserPrincipalName} with exception {e}");
                 }
             }
 
